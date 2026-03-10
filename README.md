@@ -11,5 +11,6 @@ Initial succcess achieved with creation of workspace & relevant data. Issue foun
 Verified functionality and return to repo. Rereviewed documentaiton to ensure no missed steps.
 
 
-# Issues Found
+# Issues Encountered
 - Experienced multiple issues attempting to update Postman account. Failure due to Org level restrictions. Adapted and used a separate account and utilized Enterprise Trial to complete process.
+- Chained Action failed first go around. Discovered missed URL in payments-refund workflow
