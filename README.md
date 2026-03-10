@@ -14,7 +14,11 @@ To generate one:
 2. Go to Settings (gear icon) -> Account Settings -> API Keys.
 3. Click Generate API Key, give it a label, and copy the key (Starts with PMAK- ).
 4. Set it as a GitHub secret:
+
+```
 gh secret set POSTMAN_API_KEY --repo <owner>/<repo>
+```
+
 Note: The PMAK is a long-lived key tied to your Postman account. It does not require periodic renewal like the postman-access-token.
 
 ## Obtaining postman-access-token (Open Alpha)
@@ -23,20 +27,26 @@ Note: The PMAK is a long-lived key tied to your Postman account. It does not re
 The postman-access-token is a Postman session token (x-access-token) required for internal API operations that the standard PMAK API key cannot perform — specifically workspace ↔ repo git sync (Bifrost), governance group assignment, and system environment associations. Without it, those steps are silently skipped during the onboarding pipeline.
 To obtain and configure the token:
 1. Log in via the Postman CLI (requires a browser):
+```
 postman login
+```
 This opens a browser window for Postman’s PKCE OAuth flow. Complete the sign-in.
 2. Extract the access token from the CLI credential store:
+```
 cat ~/.postman/postmanrc | jq -r '.login._profiles[].accessToken'
+```
 3. Set it as a GitHub secret on your repository or organization:
+```
 # Repository-level secret
 gh secret set POSTMAN_ACCESS_TOKEN --repo <owner>/<repo>
 
 # Organization-level secret (recommended for multi-repo use)
 gh secret set POSTMAN_ACCESS_TOKEN --org <org> --visibility selected --repos <repo1>,<repo2>
-
+```
 Paste the token when prompted.
 
 Important: This token is session-scoped and will expire. When it does, operations that depend on it (workspace linking, governance, system environment associations) will silently degrade. You will need to repeat the login and secret update process. There is no automated refresh mechanism.
+
 Note: postman login --with-api-key stores a PMAK — not the session token these APIs require. You must use the interactive browser login.
 
 ## Output Mapping
