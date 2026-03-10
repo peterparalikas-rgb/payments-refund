@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "aa7b7acb-363b-43fa-bed7-54ec3be2220c",
+    "_postman_id": "81f27905-43d3-44b7-a61d-441bdeacee92",
     "name": "[Contract] payment-refund-api",
     "description": "Comprehensive API for managing payment refunds in a financial services platform.\nThis API handles refund creation, status tracking, cancellation, and reporting for\npayment transactions processed through the authorization and capture workflow.\n\n**Authentication:**\n- External partners: OAuth 2.0 (Bearer token)\n- Internal services: JWT token (Bearer token)\n\n**Rate Limits:**\n- Standard tier: 100 requests/minute\n- Enterprise tier: 1000 requests/minute\n\n\nContact Support:\n Name: Payment Platform Team\n Email: payment-platform@example.com",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"

@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "bb3d7882-d12b-4eca-8a58-36a49b61114c",
+    "_postman_id": "e129f238-7715-4710-9732-91be25f68796",
     "name": "[Smoke] payment-refund-api",
     "description": "Comprehensive API for managing payment refunds in a financial services platform.\nThis API handles refund creation, status tracking, cancellation, and reporting for\npayment transactions processed through the authorization and capture workflow.\n\n**Authentication:**\n- External partners: OAuth 2.0 (Bearer token)\n- Internal services: JWT token (Bearer token)\n\n**Rate Limits:**\n- Standard tier: 100 requests/minute\n- Enterprise tier: 1000 requests/minute\n\n\nContact Support:\n Name: Payment Platform Team\n Email: payment-platform@example.com",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
