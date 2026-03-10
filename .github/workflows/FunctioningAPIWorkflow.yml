@@ -37,6 +37,11 @@ jobs:
         uses: postman-cs/postman-api-onboarding-action@v0
         with:
           project-name: payment-refund-api
+          workspace-id: ${{ vars.POSTMAN_WORKSPACE_ID }}
+          spec-id: ${{ vars.POSTMAN_SPEC_UID }}
+          baseline-collection-id: ${{ vars.POSTMAN_BASELINE_COLLECTION_UID }}
+          smoke-collection-id: ${{ vars.POSTMAN_SMOKE_COLLECTION_UID }}
+          contract-collection-id: ${{ vars.POSTMAN_CONTRACT_COLLECTION_UID }}
           domain: payments
           domain-code: PAY
           #spec-url: 'https://raw.githubusercontent.com/peterparalikas-rgb/payment-refund/blob/main/specs/payment-refund-api-openapi.yaml'
