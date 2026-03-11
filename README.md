@@ -24,6 +24,36 @@ Creating the workflow, I reviewed the documentation provided in the [Postman API
 
 ## Inputs
 
+| Input | Default | Notes |
+| --- | --- | --- |
+| `workspace-id` | | Reuse an existing Postman workspace through the bootstrap step. |
+| `spec-id` | | Update an existing Postman spec instead of creating a new one. |
+| `baseline-collection-id` | | Reuse an existing baseline collection. |
+| `smoke-collection-id` | | Reuse an existing smoke collection. |
+| `contract-collection-id` | | Reuse an existing contract collection. |
+| `generate-ci-workflow` | `true` | Pass through to repo sync; set `false` for repos that already manage CI. |
+| `ci-workflow-path` | `.github/workflows/ci.yml` | Pass through to repo sync to redirect generated workflow output. |
+| `project-name` | | Service name used across bootstrap and repo sync. |
+| `domain` | | Business domain used for governance assignment. |
+| `domain-code` | | Short prefix used in workspace naming. |
+| `requester-email` | | Optional workspace invite target. |
+| `workspace-admin-user-ids` | | Optional comma-separated workspace admin IDs. |
+| `spec-url` | | Required registry-backed OpenAPI document URL. |
+| `environments-json` | `["prod"]` | Environment slugs to materialize downstream. |
+| `system-env-map-json` | `{}` | Map of environment slug to system environment ID. |
+| `governance-mapping-json` | `{}` | Map of domain to governance group name. |
+| `env-runtime-urls-json` | `{}` | Map of environment slug to runtime base URL. |
+| `postman-api-key` | | Required for bootstrap and repo sync Postman operations. |
+| `postman-access-token` | | Enables governance assignment and Bifrost integration work. |
+| `github-token` | | Enables repository variable persistence and generated commits. |
+| `gh-fallback-token` | | Optional fallback token for workflow and variable APIs. |
+| `github-auth-mode` | `github_token_first` | GitHub auth mode for repository APIs. |
+| `repo-write-mode` | `commit-and-push` | Repo mutation mode passed to repo sync. |
+| `current-ref` | | Optional explicit ref override for detached checkouts. |
+| `committer-name` | `Postman FDE` | Commit author name for generated sync commits. |
+| `committer-email` | `fde@postman.com` | Commit author email for generated sync commits. |
+| `integration-backend` | `bifrost` | Current public open-alpha backend. |
+
 ## Obtaining postman-api-key
 
 The postman-api-key is a Postman API key (PMAK) used for all standard Postman API operations — creating workspaces, uploading specs, generating collections, exporting artifacts, and managing environments.
@@ -38,13 +68,14 @@ To generate one:
 gh secret set POSTMAN_API_KEY --repo <owner>/<repo>
 ```
 
-Note: The PMAK is a long-lived key tied to your Postman account. It does not require periodic renewal like the postman-access-token.
+> **Note:** The PMAK is a long-lived key tied to your Postman account. It does not require periodic renewal like the `postman-access-token`.
 
 ## Obtaining postman-access-token (Open Alpha)
-⚠️ Open-alpha limitation: The postman-access-token input requires a manually-extracted session token. There is currently no public API to exchange a Postman API key (PMAK) for an access token programmatically. This manual step will be eliminated before GA.
+> **⚠️ Open-alpha limitation:** The `postman-access-token` input requires a manually-extracted session token. There is currently no public API to exchange a Postman API key (PMAK) for an access token programmatically. This manual step will be eliminated before GA.
 
 The postman-access-token is a Postman session token (x-access-token) required for internal API operations that the standard PMAK API key cannot perform — specifically workspace ↔ repo git sync (Bifrost), governance group assignment, and system environment associations. Without it, those steps are silently skipped during the onboarding pipeline.
-To obtain and configure the token:
+**To obtain and configure the token:**
+
 1. Log in via the Postman CLI (requires a browser):
 ```
 postman login
@@ -64,9 +95,9 @@ gh secret set POSTMAN_ACCESS_TOKEN --org <org> --visibility selected --repos <re
 ```
 Paste the token when prompted.
 
-Important: This token is session-scoped and will expire. When it does, operations that depend on it (workspace linking, governance, system environment associations) will silently degrade. You will need to repeat the login and secret update process. There is no automated refresh mechanism.
+> **Important:** This token is session-scoped and will expire. When it does, operations that depend on it (workspace linking, governance, system environment associations) will silently degrade. You will need to repeat the login and secret update process. There is no automated refresh mechanism.
 
-Note: postman login --with-api-key stores a PMAK — not the session token these APIs require. You must use the interactive browser login.
+> **Note:** `postman login --with-api-key` stores a PMAK — **not** the session token these APIs require. You must use the interactive browser login.
 
 ## Output Mapping
 
