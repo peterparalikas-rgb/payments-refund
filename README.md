@@ -1,6 +1,25 @@
 # payments-refund
 Comprehensive API for managing payment refunds in a financial services platform. This API handles refund creation, status tracking, cancellation, and reporting for payment transactions processed through the authorization and capture workflow. Said workflow triggers followup run to sync the loan-origination-api-openapi.yaml file upon successful sync of the payment-refund-api-openapi.yml
 
+# Workfllow Creation Process
+Creating the workflow, I reviewed the documentation provided in the [Postman API Onboarding Action](https://github.com/postman-cs/postman-api-onboarding-action). I took the format and relevant information, and added the following:
+- Added the boilerplate 'name' and 'on' sections to the workflow
+- Ensured there were push/pull/manual options for the workflow to trigger
+- Experimented with additional permissions, before removing them (pull-requests, deployments)
+- Updating the spec-url to point toward a gist github endpoint, due to issues with running it from within my repo
+- Added the following variables under the 'with' statement for the payments-redund workflow:
+```
+          workspace-id: ${{ vars.POSTMAN_WORKSPACE_ID }}
+          spec-id: ${{ vars.POSTMAN_SPEC_UID }}
+          baseline-collection-id: ${{ vars.POSTMAN_BASELINE_COLLECTION_UID }}
+          smoke-collection-id: ${{ vars.POSTMAN_SMOKE_COLLECTION_UID }}
+          contract-collection-id: ${{ vars.POSTMAN_CONTRACT_COLLECTION_UID }}
+```
+- These variables were put in place to ensure that the same workspace, spec and collections would be referenced upon running the Actions in the future, ensuring the same workspace and data would be updated upon the workflow running, as opposed to an entirely new workspace/spec/collection being created.
+
+- I also placed the workspace-id variable in the workflow for my second API, the loan-origination-api. I made sure that the variable pointed to the correct workspace ID that had been created by the payment-refund workflow. I left out the other variables to test if they were required or not, and they appear to not be required; the workflow properly updated the repo variables accordingly. 
+
+
 # Universal Considerations
 
 ## Inputs
