@@ -188,8 +188,40 @@ paths-ignore:
       - 'docs/**'
 ```
 
-- Within the generate-and-commit section, there should bewaccomodations to account for creating the Specification, fetching it, and commiting it. See [the example](https://github.com/peterparalikas-rgb/payments-refund/blob/main/.github/EXAMPLE_workflowMissingSpec.yml) for furhter information.
+- Within the generate-and-commit section, there should bewaccomodations to account for creating the Specification, fetching it, and commiting it. See [the example](https://github.com/peterparalikas-rgb/payments-refund/blob/main/.github/EXAMPLE_workflowMissingSpec.yml) for further information.
 
+# Specific Accomodations
+
+## AWS Utilization
+* Store following secrets in Github Action Secrets or Gitlab CI variables (masked):
+```
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+(Optional) AWS_SESSION_TOKEN
+```
+* Configure GitHub/GitLab and AWS IAM to allow workflow to assume a role. Use that role in the 'Configure AWS Credentials' step
+* Put non-sensitive data (i.e. account ID, region, URLs) in config or workflow files so operators know which account/region is in use
+
+> If multiple accounts exist, you may need separate credentials or role assumptions for each
+> For API Gateway/ALB URLs: Ensure the URL put into env-runtime-urls-json is one the clients will use
+
+## GitLab Access
+
+* Create a Project or Group Action Token with write_repository; store in GitLab CI/CD variables as masked and optionally protected
+* Recreted the GitHub Actions steps in .gitlab-ci.yml: e.g. One job to generate the spec (if needed) and push, another to run Postman Onboarding (Script or API calls). Reuse the same inputs
+* The existing postman-onboarding-gh.sh can be adapted for GitLab by swapping gh for GitLab API/CLI and using CI_PROJECT_PATH, CI_COMMIT_REF_NAME, and GitLab variables.
+
+> Self-managed GitLab: Raw file URLs may require authentication or be internal-only; Postman must be able to reach the spec URL (or use a public mirror / artifact URL).
+> Protected branches: Pushing from CI often requires a token with "maintainer" or equivalent rights; branch protection rules must allow pushes from the CI user.
+
+## Kubernetes
+
+* Put the client-visible base URL (what Postman/Newman would use) into env-runtime-urls-json and, for spec generation, into runtime_url. That might be the Ingress hostname or an internal URL if the runner is in the same network.
+* If the API is only reachable inside the cluster, use a self-hosted runner (or GitLab runner) that runs inside the cluster or in a network that can reach the Ingress/internal service.
+* If using an internal CA, provide the CA bundle (e.g. as a secret or file) and use it in the "Fetch spec from runtime URL" step (e.g. curl --cacert ca.pem) and in any Newman run.
+
+> Postman Cloud cannot reach internal URLs; use a self-hosted Postman agent or run collections from a runner that has network access.
+> If URLs change per deployment (e.g. new Ingress each release), consider a stable DNS or gateway in front and document how to discover the current URL (e.g. from K8s or a config service).
 
 # Changelog
 ## 0.2
@@ -199,7 +231,7 @@ Initial succcess achieved with creation of workspace & relevant data. Issue foun
 ## 0.6
 Verified functionality and return to repo. Rereviewed documentaiton to ensure no missed steps.
 ## 0.8
-Additional notes on universal vs specific setup added for multiple scenarios.
+Additional notes on universal vs specific setup added for multiple scenarios. Included updates around customer specific steps where needed.
 
 # Issues Encountered
 - Experienced multiple issues attempting to update Postman account. Failure due to Org level restrictions. Adapted and used a separate account and utilized Enterprise Trial to complete process.
