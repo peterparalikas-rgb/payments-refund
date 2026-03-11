@@ -1,7 +1,7 @@
 # payments-refund
 Comprehensive API for managing payment refunds in a financial services platform. This API handles refund creation, status tracking, cancellation, and reporting for payment transactions processed through the authorization and capture workflow. Said workflow triggers followup run to sync the loan-origination-api-openapi.yaml file upon successful sync of the payment-refund-api-openapi.yml
 
-# Workfllow Creation Process
+# Workflow Creation Process
 Creating the workflow, I reviewed the documentation provided in the [Postman API Onboarding Action](https://github.com/postman-cs/postman-api-onboarding-action). I took the format and relevant information, and added the following:
 - Added the boilerplate 'name' and 'on' sections to the workflow
 - Ensured there were push/pull/manual options for the workflow to trigger
@@ -108,6 +108,50 @@ The composite action wires:
 * Existing-repo passthrough inputs to repo_sync: generate-ci-workflow and ci-workflow-path.
 See action.yml for exact step mappings.
 
+# Unique Considerations 
+
+In the event the user has alternative setups or restrictions, the following can be reviewed.
+
+## Github CLI is Utilized Instead of Actions
+
+Instead of creating a workflow, developers utilizing Github CLI can write a script (utilizing Node or Python, for instance) that utilizing the Postman API with the same inputs. This script can be run through the GitHub CLI at the expected point in the workflow. Blow are the fields that would be added (and edited) to accomodate for the correct varaibles. (see other for file?)
+
+```
+{
+  "project_name": "payment-refund-api",
+  "domain": "payments",
+  "domain_code": "PAY",
+  "spec_url": "https://raw.githubusercontent.com/<owner>/<repo>/main/specs/payment-refund-api-openapi.yaml",
+  "environments_json": "[\"prod\",\"stage\"]",
+  "env_runtime_urls_json": "{\"prod\":\"https://api.payments.example.com/v2\",\"stage\":\"https://api-uat.payments.example.com/v2\"}",
+  "github_repo": "<owner>/<repo>",
+  "ref": "main",
+  "workspace_id": "",
+  "postman_api_key": "",
+  "gh_fallback_token": ""
+}
+```
+
+## Differing Authentication Patterns
+
+In the event that different authentication patterns are utilized (i.e. API Keys, OAuth, JWT, mTLS, etc.):
+- Ensure the README.md contains which authtype is utilized
+- Which Postman environment variables need to be set
+- That the spec must define 'security' so gernetated requests utilzied the right authentication
+- If using Newman, ensure the runner can provider secrets for each authentication type (i.e. API Key, OAuth client credentials, etc.)
+
+## Mixed Infrastructure
+
+In the event that infrastructre is handled differently (i.e. such as Lambda, Kubernetes, etc.), treat it as an implementation detail. For each service and environment, define one base URL and ptu it in env-runtime-urls-json.
+If one repo hosts multiple services, each should have its own job or workflow with its own set of the following variables:
+* project-name
+* spec-url
+* env-runtime-urls-json
+* (Optional) a shared workspace-id
+
+## Service Missing an OpenAPI Spec 
+
+In the event there is no OpenaAPI specification in the repository 
 
 # Changelog
 ## 0.2
