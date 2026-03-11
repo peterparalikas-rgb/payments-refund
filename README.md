@@ -151,7 +151,45 @@ If one repo hosts multiple services, each should have its own job or workflow wi
 
 ## Service Missing an OpenAPI Spec 
 
-In the event there is no OpenaAPI specification in the repository 
+In the event there is no OpenaAPI specification in the repository, you can add a spec-generation step that runs in GitHub Actions, produces an OpenAPI file and commits it back to the repo. The newly made specification can then be referenced in Postman via a saved spec-url.
+
+The workflow will need to be updated to accomodate for the missing specification and also either set a source, runtime_url or collection_path for the trigger to run properly OR a manual choosing of the source/URL/collection path to be run. Some additional notes:
+
+- **Secrets:** `GH_PAT` or `GH_FALLBACK_TOKEN` with `contents: write` so the workflow can push the new file. Optionally `POSTMAN_API_KEY` when fetching a collection from the Postman API.
+- **Trigger:** Does **not** run on changes under `specs/` (to avoid loops). Runs on `workflow_dispatch` or on push to source paths (e.g. `src/`, `postman/collection.json`, or the config file).
+
+### Guidance
+
+- The workflow_dispatch should include the following:
+```
+spec_output_name:
+        description: 'Output filename (under specs/) without path, e.g. payment-refund-api-openapi.yaml'
+        required: true
+        default: 'payment-refund-api-openapi.yaml'
+      runtime_url:
+        description: '(source=runtime_url) URL of the OpenAPI endpoint, e.g. https://api.example.com/v3/api-docs'
+        required: false
+      runtime_url_auth_header:
+        description: '(optional) Auth header value, e.g. Bearer TOKEN (store token in a secret and pass here)'
+        required: false
+      collection_path:
+        description: '(source=postman_collection) Repo path to collection JSON, e.g. postman/collection.json'
+        required: false
+      postman_collection_uid:
+        description: '(source=postman_collection) Postman collection UID if fetching via API (set POSTMAN_API_KEY secret)'
+        required: false
+```
+
+- The push->paths_ignore should include the following:
+```
+paths-ignore:
+      - 'specs/**'
+      - '**.md'
+      - 'docs/**'
+```
+
+- Within the generate-and-commit section, there should bewaccomodations to account for creating the Specification, fetching it, and commiting it. See [the example](https://github.com/peterparalikas-rgb/payments-refund/blob/main/.github/EXAMPLE_workflowMissingSpec.yml) for furhter information.
+
 
 # Changelog
 ## 0.2
@@ -160,7 +198,8 @@ Initial attempt involved reviewing documentation regarding integration, workflow
 Initial succcess achieved with creation of workspace & relevant data. Issue found that a new workspace is made each run. Updating workflow to properly point to existing workspace. Future development will instead properly swap over to an automated collection of IDs to prevent manual effort. 
 ## 0.6
 Verified functionality and return to repo. Rereviewed documentaiton to ensure no missed steps.
-
+## 0.8
+Additional notes on universal vs specific setup added for multiple scenarios.
 
 # Issues Encountered
 - Experienced multiple issues attempting to update Postman account. Failure due to Org level restrictions. Adapted and used a separate account and utilized Enterprise Trial to complete process.
