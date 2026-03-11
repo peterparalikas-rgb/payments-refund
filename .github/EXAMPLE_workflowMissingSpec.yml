@@ -1,0 +1,154 @@
+# Generate OpenAPI spec and commit it back to the repo
+# Use when the service has no spec in the repo: generate from a runtime URL or from a Postman collection.
+# After this runs and pushes, the Postman onboarding workflow can run (triggered by push to specs/ or manually).
+#
+# Trigger: manual (workflow_dispatch) or on push to source code — do NOT trigger on specs/ to avoid loops.
+# Requires: secrets.GH_PAT (or GH_FALLBACK_TOKEN) with contents: write so the job can push the new spec.
+
+name: Generate OpenAPI Spec and Commit
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Where to get the spec'
+        required: true
+        default: 'runtime_url'
+        type: choice
+        options:
+          - runtime_url
+          - postman_collection
+      spec_output_name:
+        description: 'Output filename (under specs/) without path, e.g. payment-refund-api-openapi.yaml'
+        required: true
+        default: 'payment-refund-api-openapi.yaml'
+      runtime_url:
+        description: '(source=runtime_url) URL of the OpenAPI endpoint, e.g. https://api.example.com/v3/api-docs'
+        required: false
+      runtime_url_auth_header:
+        description: '(optional) Auth header value, e.g. Bearer TOKEN (store token in a secret and pass here)'
+        required: false
+      collection_path:
+        description: '(source=postman_collection) Repo path to collection JSON, e.g. postman/collection.json'
+        required: false
+      postman_collection_uid:
+        description: '(source=postman_collection) Postman collection UID if fetching via API (set POSTMAN_API_KEY secret)'
+        required: false
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'postman/collection.json'
+      - 'package.json'
+      - '.github/workflows/generate-spec-and-commit.yml'
+      - '.github/spec-generation-config.yaml'
+    paths-ignore:
+      - 'specs/**'
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  generate-and-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GH_PAT || secrets.GH_FALLBACK_TOKEN }}
+
+      - name: Resolve source
+        id: src
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "source=${{ github.event.inputs.source || 'runtime_url' }}" >> $GITHUB_OUTPUT
+            echo "spec_name=${{ github.event.inputs.spec_output_name || 'generated-openapi.yaml' }}" >> $GITHUB_OUTPUT
+            echo "runtime_url=${{ github.event.inputs.runtime_url }}" >> $GITHUB_OUTPUT
+            echo "collection_path=${{ github.event.inputs.collection_path }}" >> $GITHUB_OUTPUT
+            echo "collection_uid=${{ github.event.inputs.postman_collection_uid }}" >> $GITHUB_OUTPUT
+            echo "auth_header=${{ github.event.inputs.runtime_url_auth_header }}" >> $GITHUB_OUTPUT
+          else
+            [ -f .github/spec-generation-config.yaml ] || { echo "On push, .github/spec-generation-config.yaml is required"; exit 1; }
+            spec_name=$(grep -E '^spec_output_name:' .github/spec-generation-config.yaml 2>/dev/null | sed 's/.*: *//;s/"//g;s/ *$//') || spec_name="generated-openapi.yaml"
+            source=$(grep -E '^source:' .github/spec-generation-config.yaml 2>/dev/null | sed 's/.*: *//;s/"//g;s/ *$//') || source="runtime_url"
+            runtime_url=$(grep -E '^runtime_url:' .github/spec-generation-config.yaml 2>/dev/null | sed 's/.*: *//;s/"//g;s/ *$//') || true
+            collection_path=$(grep -E '^collection_path:' .github/spec-generation-config.yaml 2>/dev/null | sed 's/.*: *//;s/"//g;s/ *$//') || true
+            echo "source=$source" >> $GITHUB_OUTPUT
+            echo "spec_name=$spec_name" >> $GITHUB_OUTPUT
+            echo "runtime_url=$runtime_url" >> $GITHUB_OUTPUT
+            echo "collection_path=$collection_path" >> $GITHUB_OUTPUT
+            echo "collection_uid=" >> $GITHUB_OUTPUT
+            echo "auth_header=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch spec from runtime URL
+        if: steps.src.outputs.source == 'runtime_url'
+        id: fetch
+        env:
+          RUNTIME_URL: ${{ steps.src.outputs.runtime_url }}
+          AUTH_HEADER: ${{ steps.src.outputs.auth_header }}
+        run: |
+          if [ -z "$RUNTIME_URL" ]; then
+            echo "Error: runtime_url input is required when source=runtime_url"
+            exit 1
+          fi
+          mkdir -p specs
+          CURL_OPTS="-sSfL"
+          if [ -n "$AUTH_HEADER" ]; then
+            CURL_OPTS="$CURL_OPTS -H \"Authorization: $AUTH_HEADER\""
+          fi
+          eval "curl $CURL_OPTS '$RUNTIME_URL'" > specs/raw.json || { echo "Failed to fetch $RUNTIME_URL"; exit 1; }
+          # Prefer YAML for readability; convert if we have yq
+          if command -v yq &>/dev/null; then
+            yq -P -i specs/raw.json 2>/dev/null && mv specs/raw.json specs/raw.yaml || true
+          fi
+          if [ -f specs/raw.yaml ]; then
+            cp specs/raw.yaml "specs/${{ steps.src.outputs.spec_name }}"
+          else
+            # Keep as JSON or install yq
+            sudo apt-get -qq install -y yq 2>/dev/null && yq -P specs/raw.json > "specs/${{ steps.src.outputs.spec_name }}" || cp specs/raw.json "specs/${{ steps.src.outputs.spec_name }}"
+          fi
+          echo "path=specs/${{ steps.src.outputs.spec_name }}" >> $GITHUB_OUTPUT
+
+      - name: Convert Postman collection to OpenAPI
+        if: steps.src.outputs.source == 'postman_collection'
+        id: convert
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          COLLECTION_PATH="${{ steps.src.outputs.collection_path }}"
+          COLLECTION_UID="${{ steps.src.outputs.collection_uid }}"
+          SPEC_NAME="${{ steps.src.outputs.spec_name }}"
+          if [ -n "$COLLECTION_UID" ] && [ -n "$POSTMAN_API_KEY" ]; then
+            curl -sSfL "https://api.getpostman.com/collections/$COLLECTION_UID" \
+              -H "X-Api-Key: $POSTMAN_API_KEY" > collection.json
+          elif [ -n "$COLLECTION_PATH" ] && [ -f "$COLLECTION_PATH" ]; then
+            cp "$COLLECTION_PATH" collection.json
+          else
+            echo "Error: set collection_path (repo path) or postman_collection_uid + POSTMAN_API_KEY"
+            exit 1
+          fi
+          npx --yes postman-to-openapi collection.json -f "specs/$SPEC_NAME" || {
+            echo "Failed. Ensure postman-to-openapi is available (npm package: postman-to-openapi)."
+            exit 1
+          }
+          echo "path=specs/$SPEC_NAME" >> $GITHUB_OUTPUT
+
+      - name: Commit and push spec
+        run: |
+          SPEC_PATH="${{ steps.fetch.outputs.path || steps.convert.outputs.path }}"
+          if [ -z "$SPEC_PATH" ] || [ ! -f "$SPEC_PATH" ]; then
+            echo "No spec file produced"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$SPEC_PATH"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: sync OpenAPI spec (generate-spec-and-commit)"
+          git push origin HEAD:${{ github.ref_name }}
