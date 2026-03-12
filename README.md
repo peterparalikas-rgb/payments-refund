@@ -205,6 +205,17 @@ AWS_SECRET_ACCESS_KEY
 > If multiple accounts exist, you may need separate credentials or role assumptions for each
 > For API Gateway/ALB URLs: Ensure the URL put into env-runtime-urls-json is one the clients will use
 
+## ECS behind Amazon ALB
+
+* Set env-runtime-urls-json (and runtime_url for spec generation) to the full base URL of the API as seen by the client: e.g. https://api.payments.example.com/v2 or https://payments-alb-xxx.elb.amazonaws.com/v2. Include any path prefix the ALB routes to this service.
+* If the ALB uses a private CA, store the CA bundle (e.g. ALB_CA_BUNDLE or MTLS_CA_BUNDLE) and use it in the "Fetch spec from runtime URL" step and in Newman (e.g. NODE_EXTRA_CA_CERTS or --cacert).
+* If the API behind the ALB requires auth (API key, Bearer token, etc.), provide it via runtime_url_auth_header or Postman environment variables; the ALB itself does not add auth unless you use a custom auth Lambda or Cognito.
+
+> Postman Cloud and public GitHub/GitLab runners cannot reach an internal ALB. Use a self-hosted runner in the VPC, a Postman agent in the same network, or a bastion/proxy that exposes the API (with appropriate security).
+> If the ALB has sticky sessions or AWS WAF in front, ensure health checks and the OpenAPI/docs path are allowed by WAF rules.
+> If one ALB routes to several ECS services by path or host, each service has a different base URL; use separate spec-url and env-runtime-urls-json entries per service (or separate workflows).
+
+
 ## GitLab Access
 
 * Create a Project or Group Action Token with write_repository; store in GitLab CI/CD variables as masked and optionally protected
