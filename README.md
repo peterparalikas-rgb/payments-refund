@@ -346,7 +346,7 @@ paths-ignore:
       - 'docs/**'
 ```
 
-- Within the generate-and-commit section, there should bewaccomodations to account for creating the Specification, fetching it, and commiting it. See [the example](https://github.com/peterparalikas-rgb/payments-refund/blob/main/.github/EXAMPLE_workflowMissingSpec.yml) for further information.
+- Within the generate-and-commit section, there should be accommodations to account for creating the Specification, fetching it, and commiting it. See [the example](https://github.com/peterparalikas-rgb/payments-refund/blob/main/.github/EXAMPLE_workflowMissingSpec.yml) for further information.
 
 # Specific Accomodations
 
