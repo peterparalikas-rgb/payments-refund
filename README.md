@@ -377,8 +377,8 @@ AWS_SECRET_ACCESS_KEY
 ## GitLab Access
 
 * Create a Project or Group Action Token with write_repository; store in GitLab CI/CD variables as masked and optionally protected
-* Recreted the GitHub Actions steps in .gitlab-ci.yml: e.g. One job to generate the spec (if needed) and push, another to run Postman Onboarding (Script or API calls). Reuse the same inputs
-* The existing postman-onboarding-gh.sh can be adapted for GitLab by swapping gh for GitLab API/CLI and using CI_PROJECT_PATH, CI_COMMIT_REF_NAME, and GitLab variables.
+* Recreat the GitHub Actions steps in .gitlab-ci.yml: e.g. One job to generate the spec (if needed) and push, another to run Postman Onboarding (Script or API calls). Reuse the same inputs
+* The existing FunctioningAPIWorkflow.yml can be adapted for GitLab by swapping gh for GitLab API/CLI and using CI_PROJECT_PATH, CI_COMMIT_REF_NAME, and GitLab variables.
 
 > Self-managed GitLab: Raw file URLs may require authentication or be internal-only; Postman must be able to reach the spec URL (or use a public mirror / artifact URL).
 > Protected branches: Pushing from CI often requires a token with "maintainer" or equivalent rights; branch protection rules must allow pushes from the CI user.
