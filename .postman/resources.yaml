@@ -1,5 +1,10 @@
 workspace:
   id: a8b73d6f-d71d-441d-a883-35107fa75cf4
+cloudResources:
+  collections:
+    ../postman/collections/[Baseline] payment-refund-api: 14401938-6c63cad9-3a9f-42b0-b4c0-0a1f8e43bb54
+    ../postman/collections/[Smoke] payment-refund-api: 14401938-e129f238-7715-4710-9732-91be25f68796
+    ../postman/collections/[Contract] payment-refund-api: 14401938-81f27905-43d3-44b7-a61d-441bdeacee92
 localResources:
   specs:
     - ../index.yaml
